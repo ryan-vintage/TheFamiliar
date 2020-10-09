@@ -7,7 +7,18 @@ if not os.path.isfile("./data.json"):
     bookListPage = req.get(baseLink + "/wiki/Category:Volumes")
     bookListPageSoup = BeautifulSoup(bookListPage.text, "lxml")
 
-    data = {}
+    data = {"colors":{
+		"Xanther Ibrahim": { "primary": "#F7B7C7", "secondary": "#201C1A" },
+		"Jingjing": { "primary": "#01ACE0", "secondary": "#E90280" },
+		"Luther Perez": { "primary": "#231F1C", "secondary": "#FBE445" },
+		"Anwar Ibrahim": { "primary": "#569254", "secondary": "#CA5A24" },
+		"Astair Ibrahim": { "primary": "#F7831C", "secondary": "#FADCB1" },
+		"Isand\u00f2rno": { "primary": "#ECCE52", "secondary": "#813E19" },
+		"\u00d6zg\u00fcr Yildirim": { "primary": "#855912", "secondary": "#BBBCB4" },
+		"The Wizard": { "primary": "#A7A8A2", "secondary": "#79555C" },
+		"Shnorhk Zildjian": { "primary": "#BE4935", "secondary": "#7D9AC5" }
+    }}
+    
     data["books"] = []
 
     for element in bookListPageSoup.find_all(
