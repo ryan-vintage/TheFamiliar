@@ -7,14 +7,18 @@ let toggledCircle = null;
 getJsonData("../data.json");
 
 function setup() {
-  createCanvas(800, 800);
-  emptyChapterCircle = new ChapterCircle(400, 400, 600, PI/2, true);
-  chapterCircle = new ChapterCircle(400, 400, 600, PI/2, false);
+  createCanvas(windowWidth, windowHeight);
+  emptyChapterCircle = new ChapterCircle(400, 400, 500, PI/2, true);
+  chapterCircle = new ChapterCircle(400, 400, 500, PI/2, false);
   toggleEmptyDataButton = createButton('Toggle Empty Data');
   toggleEmptyDataButton.position(25,25);
   toggleEmptyDataButton.mousePressed(function(){isEmptyDataToggled = !isEmptyDataToggled});
   //TODO: Function to generate spacing based on % of circle to white space
   //Should work so no matter the number of chapters there will still be space between them
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function getJsonData(location){
@@ -36,7 +40,7 @@ function draw() {
     toggledCircle = emptyChapterCircle;
   }
   toggledCircle.show();
-  if(isHoveringOnCircle(toggledCircle.startPos,toggledCircle.endPos,toggledCircle.diameter/2)){
+  if(isHoveringOnCircle(toggledCircle.circleXPos,toggledCircle.circleYPos,toggledCircle.radius)){
     toggledCircle.onHover();
   }
 }
@@ -56,10 +60,10 @@ function isHoveringOnCircle(x,y,radius){
 }
 
 class ChapterCircle{
-  constructor(startPos, endPos, diameter, spacing, showUndefined){
-    this.startPos = startPos;
-    this.endPos = endPos;
-    this.diameter = diameter;
+  constructor(circleXPos, circleYPos, diameter, spacing, showUndefined){
+    this.circleXPos = circleXPos;
+    this.circleYPos = circleYPos;
+    this.radius = diameter/2;
     this.showUndefined = showUndefined;
     this.numOfChapters = this.getNumOfChapters();
     this.spacing = spacing;
@@ -86,7 +90,7 @@ class ChapterCircle{
     familiarData.books.map(book => {
       book.chapters.map(chapter => {
         if(chapter.narrator || this.showUndefined){
-          arcs.push(new ChapterArc(this.startPos, this.endPos, tempStartPos, tempStartPos+this.arcLength, this.diameter, chapter));
+          arcs.push(new ChapterArc(this.circleXPos, this.circleYPos, tempStartPos, tempStartPos+this.arcLength, this.radius, chapter));
           tempStartPos = tempStartPos+this.arcLength+this.spacingLength;
         }
       })
@@ -108,17 +112,36 @@ class ChapterCircle{
 }
 
 class ChapterArc {
-  constructor(startPos, endPos, start, end, diameter, chapter){
-    this.startPos = startPos;
-    this.endPos = endPos;
-    this.start = start;
-    this.end = end;
-    this.diameter = diameter;
+  constructor(circleXPos, circleYPos, startRadian, endRadian, radius, chapter){
+    this.circleXPos = circleXPos;
+    this.circleYPos = circleYPos;
+    this.startRadian = startRadian;
+    this.endRadian = endRadian;
+    this.midRadian = this.startRadian+((this.endRadian-this.startRadian)/2);
+    this.radius = radius;
     this.chapter = chapter;
     this.color = this.getColor();
+    this.isFocused = false;
+
+    //CONSTANT Variables
     this.width = 8;
     this.focusWidthChange = 8;
-    this.isFocused = false;
+    this.focusedRadius = this.radius+(this.radius/3);
+    this.middleCurveOffset = 8;
+
+    this.arcStartX = this.circleXPos + this.radius*cos(this.startRadian);
+    this.arcStartY = this.circleYPos+this.radius*sin(this.startRadian);
+    this.arcMidX = this.circleXPos + this.radius*cos(this.midRadian);
+    this.arcMidY = this.circleYPos+this.radius*sin(this.midRadian);
+    this.arcEndX = this.circleXPos + this.radius*cos(this.endRadian);
+    this.arcEndY = this.circleYPos+this.radius*sin(this.endRadian);
+
+    this.extendedArcStartX = this.circleXPos + this.focusedRadius*cos(this.startRadian);
+    this.extendedArcStartY = this.circleYPos+this.focusedRadius*sin(this.startRadian);
+    this.extendedArcMidX = this.circleXPos + (this.focusedRadius+this.middleCurveOffset)*cos(this.midRadian);
+    this.extendedArcMidY = this.circleYPos+(this.focusedRadius+this.middleCurveOffset)*sin(this.midRadian);
+    this.extendedArcEndX = this.circleXPos + this.focusedRadius*cos(this.endRadian);
+    this.extendedArcEndY = this.circleYPos+this.focusedRadius*sin(this.endRadian);
   }
 
   getColor(){
@@ -132,7 +155,7 @@ class ChapterArc {
   }
 
   onHover(){
-    if(collidePointArc(mouseX, mouseY, this.startPos, this.endPos, this.diameter/2, this.start+((this.end-this.start)/2), (this.end-this.start))){
+    if(collidePointArc(mouseX, mouseY, this.circleXPos, this.circleYPos, this.radius, this.midRadian, (this.endRadian-this.startRadian))){
       this.focus();
     }
     else{
@@ -154,14 +177,36 @@ class ChapterArc {
     }
   }
 
-  show(){
-    // console.log(this.chapter.narrator, this.color);
-    stroke(this.color);
+  drawFocusedShape(){
+    fill(this.color);
+    strokeWeight(0);
+    beginShape();
+    vertex(this.arcStartX,this.arcStartY);
+    vertex(this.extendedArcStartX, this.extendedArcStartY);
+    vertex(this.extendedArcMidX, this.extendedArcMidY);
+    vertex(this.extendedArcEndX, this.extendedArcEndY);
+    vertex(this.arcEndX, this.arcEndY);
+    endShape(CLOSE);
     strokeWeight(this.width);
+    arc(this.circleXPos,this.circleYPos,this.radius*2,this.radius*2,this.startRadian,this.endRadian)
+  }
+
+  drawUnfocusedShape(){
+    noFill();
+    strokeWeight(this.width);
+    arc(this.circleXPos,this.circleYPos,this.radius*2,this.radius*2,this.startRadian,this.endRadian)
+  }
+
+  show(){
+    stroke(this.color);
     strokeCap(SQUARE);
     ellipseMode(CENTER);
-    noFill();
-    arc(this.startPos,this.endPos,this.diameter,this.diameter,this.start,this.end)
+    if(this.isFocused){
+      this.drawFocusedShape();
+    }
+    else{
+      this.drawUnfocusedShape();
+    }
   }
 
 }
