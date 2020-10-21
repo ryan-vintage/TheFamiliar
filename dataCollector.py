@@ -27,6 +27,7 @@ if not os.path.isfile("./data.json"):
         volume = (element.text.split(":", 1)[0]).replace("Volume ", "")
         title = element.text.split(": ", 1)[1]
 
+        chapterCount = 1;
         chapters = []
         bookPage = req.get(baseLink + element["href"])
         bookPageSoup = BeautifulSoup(bookPage.text, "lxml")
@@ -74,6 +75,7 @@ if not os.path.isfile("./data.json"):
                                     chapters.append(
                                         {
                                             "title": li.a.text,
+                                            "chapter":chapterCount,
                                             "narrator": narrator,
                                             "start": start,
                                             "end": end,
@@ -81,9 +83,10 @@ if not os.path.isfile("./data.json"):
                                         }
                                     )
                                 else:
-                                    chapters.append({"title": li.text})
+                                    chapters.append({"title": li.text, "chapter":chapterCount})
                             else:
-                                chapters.append({"title": li.text})
+                                chapters.append({"title": li.text, "chapter":chapterCount})
+                            chapterCount += 1;
 
         data["books"].append({"volume": volume, "title": title, "chapters": chapters})
     with open("data.json", "w") as outfile:

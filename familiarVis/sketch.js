@@ -90,7 +90,7 @@ class ChapterCircle{
     familiarData.books.map(book => {
       book.chapters.map(chapter => {
         if(chapter.narrator || this.showUndefined){
-          arcs.push(new ChapterArc(this.circleXPos, this.circleYPos, tempStartPos, tempStartPos+this.arcLength, this.radius, chapter));
+          arcs.push(new ChapterArc(this.circleXPos, this.circleYPos, tempStartPos, tempStartPos+this.arcLength, this.radius, chapter, book));
           tempStartPos = tempStartPos+this.arcLength+this.spacingLength;
         }
       })
@@ -112,7 +112,7 @@ class ChapterCircle{
 }
 
 class ChapterArc {
-  constructor(circleXPos, circleYPos, startRadian, endRadian, radius, chapter){
+  constructor(circleXPos, circleYPos, startRadian, endRadian, radius, chapter, book){
     this.circleXPos = circleXPos;
     this.circleYPos = circleYPos;
     this.startRadian = startRadian;
@@ -120,6 +120,7 @@ class ChapterArc {
     this.midRadian = this.startRadian+((this.endRadian-this.startRadian)/2);
     this.radius = radius;
     this.chapter = chapter;
+    this.book = book;
     this.color = this.getColor();
     this.isFocused = false;
 
@@ -177,6 +178,20 @@ class ChapterArc {
     }
   }
 
+  drawVolumeChapterText(){
+  // rotate the buffer by 90 degrees (remember rotate() works with radians)
+    push()
+      // similar to passing 75,0 to text, but keeping transformations grouped for easy tweaking
+    translate(this.arcMidX,this.arcEndY);
+    rotate(this.midRadian);
+    strokeWeight(0);
+    fill(255);
+    textAlign(CENTER);
+    textSize(8);
+    text("V."+ this.book.volume + " Ch."+this.chapter.chapter, 0, 0);
+    pop()
+  }
+
   drawFocusedShape(){
     fill(this.color);
     strokeWeight(0);
@@ -189,6 +204,7 @@ class ChapterArc {
     endShape(CLOSE);
     strokeWeight(this.width);
     arc(this.circleXPos,this.circleYPos,this.radius*2,this.radius*2,this.startRadian,this.endRadian)
+    this.drawVolumeChapterText();
   }
 
   drawUnfocusedShape(){
